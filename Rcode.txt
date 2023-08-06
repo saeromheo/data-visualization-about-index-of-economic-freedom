@@ -1,0 +1,690 @@
+##### 데이터 준비 
+getwd() # 현재 디렉토리에 데이터가 있는지 확인
+library(readxl) # 엑셀 데이터 가져오기 
+# 데이터 불러오기 & 결측치 NA로 바꾸기 
+{
+  cle13 <- read_excel('crime_life_economic_7years_0516.xlsx', sheet = 1) # 7개년치 데이터 저장 
+  cle14 <- read_excel('crime_life_economic_7years_0516.xlsx', sheet = 2) 
+  cle15 <- read_excel('crime_life_economic_7years_0516.xlsx', sheet = 3) 
+  cle16 <- read_excel('crime_life_economic_7years_0516.xlsx', sheet = 4) 
+  cle17 <- read_excel('crime_life_economic_7years_0516.xlsx', sheet = 5) 
+  cle18 <- read_excel('crime_life_economic_7years_0516.xlsx', sheet = 6) 
+  cle19 <- read_excel('crime_life_economic_7years_0516.xlsx', sheet = 7) 
+  for(column_cnt in 6:46) { # 7개년치 모든 데이터 결측치 NA 처리 
+    for(row_cnt in 1:186) {
+      cle13[row_cnt,column_cnt]<-ifelse(cle13[row_cnt,column_cnt]==999999,NA,cle13[row_cnt,column_cnt])
+      cle14[row_cnt,column_cnt]<-ifelse(cle14[row_cnt,column_cnt]==999999,NA,cle14[row_cnt,column_cnt])
+      cle15[row_cnt,column_cnt]<-ifelse(cle15[row_cnt,column_cnt]==999999,NA,cle15[row_cnt,column_cnt])
+      cle16[row_cnt,column_cnt]<-ifelse(cle16[row_cnt,column_cnt]==999999,NA,cle16[row_cnt,column_cnt])
+      cle17[row_cnt,column_cnt]<-ifelse(cle17[row_cnt,column_cnt]==999999,NA,cle17[row_cnt,column_cnt])
+      cle18[row_cnt,column_cnt]<-ifelse(cle18[row_cnt,column_cnt]==999999,NA,cle18[row_cnt,column_cnt])
+      cle19[row_cnt,column_cnt]<-ifelse(cle19[row_cnt,column_cnt]==999999,NA,cle19[row_cnt,column_cnt])
+    }
+  }
+}
+
+##### 19년스코어와 1인당국민총생산 상관분석, 산점도, 회귀직선 
+cle19_scgd <- cle19[,c('Score2019','GDPperCapita')]
+boxplot(cle19_scgd$Score2019)$stats # 이상치 체크 
+boxplot(cle19_scgd$GDPperCapita)$stats # 이상치 체크 
+cle19_scgd$Score2019 <- ifelse((cle19_scgd$Score2019 < 38.9 | cle19_scgd$Score2019 > 84.4), NA,cle19_scgd$Score2019) # 19년스코어 이상치 제거 
+cle19_scgd$GDPperCapita <- ifelse((cle19_scgd$GDPperCapita < 676.92 | cle19_scgd$GDPperCapita> 66162.89), NA,cle19_scgd$GDPperCapita)
+cle19_scgd$GDPperCapita <- ifelse((cle19_scgd$GDPperCapita < 676.92 | cle19_scgd$GDPperCapita> 61421.82), NA,cle19_scgd$GDPperCapita)
+cle19_scgd$GDPperCapita <- ifelse((cle19_scgd$GDPperCapita < 676.92 | cle19_scgd$GDPperCapita> 59501.11), NA,cle19_scgd$GDPperCapita)
+cle19_scgd$GDPperCapita <- ifelse((cle19_scgd$GDPperCapita < 676.92 | cle19_scgd$GDPperCapita> 54777.380), NA,cle19_scgd$GDPperCapita) # 1인당국민총생산 이상치 제거 
+cle19_scgd <- na.omit(cle19_scgd)
+cor.test(cle19_scgd$Score2019, cle19_scgd$GDPperCapita) # 결측치 제외 후 상관분석 - r = 0.6640162, 결과가 유의하다.
+plot(cle19_scgd$Score2019, cle19_scgd$GDPperCapita) # 산점도 
+m0 <- lm(GDPperCapita ~ Score2019, data = cle19_scgd) # 회귀직선
+m0
+abline(m0, col = 'red')
+
+##### 스코어 시계열 그래프 그리기 
+##### 그래프를 그려본 결과 딱히 의미있는 결과를 찾기가 힘들어서 2019스코어 상위 10개국, 아시아대륙 그래프만 그려봤음.
+# 2013 ~ 2019 경제자유지수 데이터 하나로 합치기  
+cle13_time <- cle13[,c(1,3,5,10)] # countryID, WEBNAME, 지역, 스코어2013
+cle14_2 <- cle14[,c(1,10)] # countryID, 스코어2014
+cle15_2 <- cle15[,c(1,10)] # countryID, 스코어2015
+cle16_2 <- cle16[,c(1,10)] # countryID, 스코어2016
+cle17_2 <- cle17[,c(1,10)] # countryID, 스코어2017
+cle18_2 <- cle18[,c(1,10)] # countryID, 스코어2018
+cle19_2 <- cle19[,c(1,10)] # countryID, 스코어2019
+library(plyr)
+cle_time <- join(cle13[,c(1,3,5,10)],cle14[,c(1,10)], by = 'CountryID')
+cle_time <- join(cle_time,cle15[,c(1,10)], by = 'CountryID')
+cle_time <- join(cle_time,cle16[,c(1,10)], by = 'CountryID')
+cle_time <- join(cle_time,cle17[,c(1,10)], by = 'CountryID')
+cle_time <- join(cle_time,cle18[,c(1,10)], by = 'CountryID')
+cle_time <- join(cle_time,cle19[,c(1,10)], by = 'CountryID') # CountryID, WEBNAME, 대륙, 스코어13~19년까지의 컬럼을 합친 데이터프레임 생성 
+str(cle_time)
+dim(cle_time) # 조인이 잘 됐는지 확인 
+head(cle_time, 20)
+summary(cle_time)
+
+# 스코어2019 기준 상위 10개 나라의 7개년 시계열 그래프 그리기 
+library(dplyr)
+cle_time_top10 <- cle_time %>% filter(!is.na(Score2019)) %>% arrange(desc(Score2019)) %>% head(10) %>% select(1,2,4:10) # CountryID, WEBNAME, 스코어2013~2019
+cle_time_top10
+cle_time_top10_2 <- t(cle_time_top10) # 그래프를 그리기 위해 전치행렬로 만들기
+cle_time_top10_2
+colnames(cle_time_top10_2) <- cle_time_top10$WEBNAME # 열이름을 나라이름으로 바꾸기
+ts.plot(cle_time_top10_2[c(3:9),], type = 'l', col = rainbow(10)) # 스코어2019점수 기준 상위 10개 나라의 7개년 스코어 추이 선그래프
+legend('bottomright', legend = cle_time_top10$WEBNAME, fill = rainbow(10), cex = .5)
+
+# 대륙별 7개년 시계열 그래프
+# 아시아
+cle_time_asia <- cle_time %>% filter(!is.na(Score2019) & !is.na(Score2018) & !is.na(Score2017) & !is.na(Score2016) & !is.na(Score2015) & !is.na(Score2014) & !is.na(Score2013)) %>% 
+  filter(Region2 == 'Asia-Pacific') %>% arrange(desc(Score2019)) %>% select(1,2,4:10) # 7개년 결측치 필터, 스코어2019로 내림차순 정렬 후 CountryID, WEBNAME, 스코어2013~2019 컬럼 가져오기
+cle_time_asia
+dim(cle_time_asia) # 결측치를 제외한 41개 국가
+dim(cle19 %>% filter(Region2 == 'Asia-Pacific')) # 2019년 데이터에서 아시아국가가 43개이므로 2개의 국가가 제외됨
+cle_time_asia_2 <- t(cle_time_asia) # 그래프를 그리기 위해 전치행렬로 만들기
+cle_time_asia_2
+colnames(cle_time_asia_2) <- cle_time_asia$WEBNAME # 열이름을 나라이름으로 바꾸기
+dim(cle_time_asia_2)
+ts.plot(cle_time_asia_2[c(3:9),], type = 'l', col = rainbow(41), ylim = c(0, 100)) # 아시아국가의 7개년 스코어 추이 선그래프
+legend('bottomright', legend = cle_time_asia$WEBNAME, fill = rainbow(41), cex = .5)
+
+# 다른 대륙들도 아시아에서 컬럼만 바꿔서 그래프를 그려볼 수 있음.
+cle_time_samerica <- cle_time %>% filter(!is.na(Score2019) & !is.na(Score2018) & !is.na(Score2017) & !is.na(Score2016) & !is.na(Score2015) & !is.na(Score2014) & !is.na(Score2013)) %>% 
+  filter(Region2 == 'South Americas') %>% arrange(desc(Score2019)) %>% select(1,2,4:10) # 7개년 결측치 필터, 스코어2019로 내림차순 정렬 후 CountryID, WEBNAME, 스코어2013~2019 컬럼 가져오기
+cle_time_namerica <- cle_time %>% filter(!is.na(Score2019) & !is.na(Score2018) & !is.na(Score2017) & !is.na(Score2016) & !is.na(Score2015) & !is.na(Score2014) & !is.na(Score2013)) %>% 
+  filter(Region2 == 'North Americas') %>% arrange(desc(Score2019)) %>% select(1,2,4:10) # 7개년 결측치 필터, 스코어2019로 내림차순 정렬 후 CountryID, WEBNAME, 스코어2013~2019 컬럼 가져오기
+cle_time_middleeast <- cle_time %>% filter(!is.na(Score2019) & !is.na(Score2018) & !is.na(Score2017) & !is.na(Score2016) & !is.na(Score2015) & !is.na(Score2014) & !is.na(Score2013)) %>% 
+  filter(Region2 == 'Middle East and North Africa') %>% arrange(desc(Score2019)) %>% select(1,2,4:10) # 7개년 결측치 필터, 스코어2019로 내림차순 정렬 후 CountryID, WEBNAME, 스코어2013~2019 컬럼 가져오기
+cle_time_europe <- cle_time %>% filter(!is.na(Score2019) & !is.na(Score2018) & !is.na(Score2017) & !is.na(Score2016) & !is.na(Score2015) & !is.na(Score2014) & !is.na(Score2013)) %>% 
+  filter(Region2 == 'Europe') %>% arrange(desc(Score2019)) %>% select(1,2,4:10) # 7개년 결측치 필터, 스코어2019로 내림차순 정렬 후 CountryID, WEBNAME, 스코어2013~2019 컬럼 가져오기
+cle_time_africa <- cle_time %>% filter(!is.na(Score2019) & !is.na(Score2018) & !is.na(Score2017) & !is.na(Score2016) & !is.na(Score2015) & !is.na(Score2014) & !is.na(Score2013)) %>% 
+  filter(Region2 == 'Sub-Saharan Africa') %>% arrange(desc(Score2019)) %>% select(1,2,4:10) # 7개년 결측치 필터, 스코어2019로 내림차순 정렬 후 CountryID, WEBNAME, 스코어2013~2019 컬럼 가져오기
+
+##### 요인분석 
+### 2019년 
+cle19_fac <- na.omit(cle19[,c(11:22)]) # 경제자유도지수를 이루는 12개 변수만 추출
+
+# 주성분 분석
+pc <- prcomp(cle19_fac) # 주성분분석 시행 
+summary(pc) # 주성분분석 결과 : 성분 3개가 전체 데이터의 78%, 4개가 85%, 5개가 89% 차지
+print(pc)
+plot(pc) # 주성분분석 시각화
+#corrplot(cor(cle19_fac), method = "number")
+
+# 고유값을 이용한 요인수 분석
+en <- eigen(cor(cle19_fac)) # 고유값 계산
+en 
+plot(en$values, type = 'o') # 요인수 분석 시각화 : 3부터 그래프가 완만하게 감소하므로 주성분을 3개로 추측 
+
+result <- factanal(cle19_fac, factors = 3, rotation = "varimax", scores = "regression") # 주성분을 3개로 요인분석 
+result # 요인분석 결과 : P < 0.05 -> 요인수가 부족하다
+result <- factanal(cle19_fac, factors = 4, rotation = "varimax", scores = "regression") # 주성분을 4개로 요인분석 
+result # 요인분석 결과 : 4개로 충분하다.
+
+### 2013년
+cle13_fac <- na.omit(cle13[,c(11,13:15,17:22)]) # 경제자유도지수를 이루는 10개 변수만 추출 (2016년부터 12개의 변수)
+
+# 주성분 분석
+pc <- prcomp(cle13_fac) # 주성분분석 시행 
+summary(pc) # 주성분분석 결과 : 성분 3개가 전체 데이터의 80.9%, 4개가 87%, 5개가 91% 차지
+plot(pc) # 주성분분석 시각화
+
+# 고유값을 이용한 요인수 분석
+en <- eigen(cor(cle13_fac)) # 고유값 계산
+en 
+plot(en$values, type = 'o') # 요인수 분석 시각화 : 3부터 그래프가 완만하게 감소하므로 주성분을 3개로 추측 
+
+result <- factanal(cle13_fac, factors = 3, rotation = "varimax", scores = "regression") # 주성분을 3개로 요인분석 
+result # 요인분석 결과 : P < 0.05 -> 요인수가 부족하다
+result <- factanal(cle13_fac, factors = 4, rotation = "varimax", scores = "regression") # 주성분을 4개로 요인분석 
+result # 요인분석 결과 : 4개로 충분하다.
+# -> 분석 이후 데이터 변동이 생겨 결과가 다를 수 있음 
+
+### 요인분석으로 얻은 4개의 변수로 2013 경제자유도 순위 계산
+cle13_fac_2 <- cle13 %>% filter(!is.na(Score2013)) %>% select(1,6,7,10) %>% arrange(desc(Score2013)) # CountryID, WorldRank, RegionRank, 스코어만 추출 후 스코어 내림차순 정렬
+cle_fac13_2 <- cle_fac13_2 %>% arrange(desc(Score2013))# id, 랭킹, 지역랭킹, 스코어만 추출한 것을 스코어로 내림차순 정렬
+cle_fac13_3 <- cle13 %>% filter(!is.na(Score2013)) %>% select(1,10,21,11,15,18) %>% arrange(desc(Score2013))
+library(dplyr)
+cle_fac13_3 <- rename(cle_fac13_3, fCountryID = CountryID) # 4개 변수만 가지고 점수낸 아이디컬럼명 바꾸기
+cle_fac13_3 <- cle_fac13_3 %>% mutate(means = (InvestmentFreedom + PropertyRights + GovtSpending + LaborFreedom)/4) # 4개컬럼평균 추가 -> 이후 데이터 수정으로 변수가 변경되었으므로 변수를 바꿔 실행해보새오 ㅠㅠㅠ
+cle_fac13_3 <- cle_fac13_3 %>% arrange(desc(means)) # 순위 생성을 위한 평균 내림차순 정렬 
+cle_fac13_3
+dim(cle_fac13_2)
+dim(cle_fac13_3)
+cle_fac13_4 <- cbind(cle_fac13_2[,c(1,4)], cle_fac13_3[,c(1,7)])
+cle_fac13_4 <- cle_fac13_4 %>% arrange(desc(Score2013))
+library(xlsx)
+# write.xlsx(cle_fac13_4, file = "cle_fac13_4.xlsx") # 엑셀로 저장 
+# 엑셀로 저장 후 요인분석 후 순위를 rank, 요인분석 전과 후 랭킹 차이를 diff, 경제자유도지수를 5단계로 나눈 index, 전체 나라를 균등한 개수로 세 그룹으로 나눈 three 변수 생성 후 다시 불러오기
+cle_fac13_4 <- read_excel('cle_fac13_4.xlsx', sheet = 1) # sheet1은 값만, sheet2에 사용한 함수 포함된 원본 
+# 2014년 ~ 2019년 자료도 위와 같은 방법으로 요인분석 실행 후 데이터 생성 
+# cle_fac14_4 <- read_excel('cle_fac14_4.xlsx', sheet = 1)
+# cle_fac15_4 <- read_excel('cle_fac15_4.xlsx', sheet = 1)
+# cle_fac16_4 <- read_excel('cle_fac16_4.xlsx', sheet = 1)
+# cle_fac17_4 <- read_excel('cle_fac17_4.xlsx', sheet = 1)
+# cle_fac18_4 <- read_excel('cle_fac18_4.xlsx', sheet = 1)
+# cle_fac19_4 <- read_excel('cle_fac19_4.xlsx', sheet = 1)
+
+## 1) 인덱스별로 시각화 
+# index == 5 : Free
+cle_fac13_4_5 <- cle_fac13_4 %>% filter(index == 5)
+cle_fac13_4_5
+plot(cle_fac13_4_5[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+# index == 4 : Mostly Free
+cle_fac13_4_4 <- cle_fac13_4 %>% filter(index == 4)
+cle_fac13_4_4
+plot(cle_fac13_4_4[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+# index == 3 : Moderately Free
+cle_fac13_4_3 <- cle_fac13_4 %>% filter(index == 3)
+cle_fac13_4_3
+plot(cle_fac13_4_3[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+# index == 2 : Mostly Unfree
+cle_fac13_4_2 <- cle_fac13_4 %>% filter(index == 2)
+cle_fac13_4_2
+plot(cle_fac13_4_2[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+# index == 1 : Repressed
+cle_fac13_4_1 <- cle_fac13_4 %>% filter(index == 1)
+cle_fac13_4_1
+plot(cle_fac13_4_1[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+# 큰 의미가 보이지 않음 -> 5개로 나누는 인덱스 말고 세 그룹으로 나눠서 시각화 다시 진행 
+
+## 2) 상/중/하 세 그룹으로 나눠서 시각화 
+# 경제자유도 상위
+cle_fac13_4_h <- cle_fac13_4 %>% filter(three == 1)
+cle_fac13_4_h
+plot(cle_fac13_4_h[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+# 경제자유도 중위
+cle_fac13_4_m <- cle_fac13_4 %>% filter(three == 2)
+cle_fac13_4_m
+plot(cle_fac13_4_m[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+# 경제자유도 하위
+cle_fac13_4_l <- cle_fac13_4 %>% filter(three == 3)
+cle_fac13_4_l
+plot(cle_fac13_4_l[,c(2,7)], pch = 17, cex = 2, type = 'l')
+abline(h=0, col = '#fb6a31') 
+
+##### 전체년도 상중하를 한눈에 보기 
+### 2013년 
+cle_fac13_4 <- read_excel('cle_fac13_4.xlsx', sheet = 1)
+cle_fac13_4
+cle_fac13_4$three <- ifelse(cle_fac13_4$three == 1, 'one', ifelse(cle_fac13_4$three == 2, 'two',
+                                                                  ifelse(cle_fac13_4$three == 3, 'thr',NA)))
+ggplot(data = cle_fac13_4, aes(x = num, y = diff, group = three, col = three)) + geom_line() + ylim(-70,50) +
+  scale_x_discrete(limits = cle_fac13_4$num,cle_fac13_4$three)
+
+### 2014년 
+cle_fac14_4 <- read_excel('cle_fac14_4.xlsx', sheet = 1)
+cle_fac14_4
+cle_fac14_4$three <- ifelse(cle_fac14_4$three == 1, 'one', ifelse(cle_fac14_4$three == 2, 'two',
+                                                                  ifelse(cle_fac14_4$three == 3, 'thr',NA)))
+ggplot(data = cle_fac14_4, aes(x = num, y = diff, group = three, col = three)) + geom_line() + ylim(-70,50) +
+  scale_x_discrete(limits = cle_fac14_4$num,cle_fac14_4$three)
+
+### 2015년 
+cle_fac15_4 <- read_excel('cle_fac15_4.xlsx', sheet = 1)
+cle_fac15_4
+cle_fac15_4$three <- ifelse(cle_fac15_4$three == 1, 'one', ifelse(cle_fac15_4$three == 2, 'two',
+                                                                  ifelse(cle_fac15_4$three == 3, 'thr',NA)))
+ggplot(data = cle_fac15_4, aes(x = num, y = diff, group = three, col = three)) + geom_line() + ylim(-70,50) +
+  scale_x_discrete(limits = cle_fac15_4$num,cle_fac15_4$three)
+
+### 2016년
+cle_fac16_4 <- read_excel('cle_fac16_4.xlsx', sheet = 1) 
+cle_fac16_4
+cle_fac16_4$three <- ifelse(cle_fac16_4$three == 1, 'one', ifelse(cle_fac16_4$three == 2, 'two',
+                                                                  ifelse(cle_fac16_4$three == 3, 'thr',NA)))
+ggplot(data = cle_fac16_4, aes(x = num, y = diff, group = three, col = three)) + geom_line() + ylim(-70,50) +
+  scale_x_discrete(limits = cle_fac16_4$num,cle_fac16_4$three)
+
+### 2017년
+cle_fac17_4 <- read_excel('cle_fac17_4.xlsx', sheet = 1)
+cle_fac17_4
+cle_fac17_4$three <- ifelse(cle_fac17_4$three == 1, 'one', ifelse(cle_fac17_4$three == 2, 'two',
+                                                                  ifelse(cle_fac17_4$three == 3, 'thr',NA)))
+ggplot(data = cle_fac17_4, aes(x = num, y = diff, group = three, col = three)) + geom_line() + ylim(-70,50) +
+  scale_x_discrete(limits = cle_fac17_4$num,cle_fac17_4$three)
+
+### 2018년
+cle_fac18_4 <- read_excel('cle_fac18_4.xlsx', sheet = 1) 
+cle_fac18_4
+cle_fac18_4$three <- ifelse(cle_fac18_4$three == 1, 'one', ifelse(cle_fac18_4$three == 2, 'two',
+                                                                  ifelse(cle_fac18_4$three == 3, 'thr',NA)))
+ggplot(data = cle_fac18_4, aes(x = num, y = diff, group = three, col = three)) + geom_line() + ylim(-70,50) +
+  scale_x_discrete(limits = cle_fac18_4$num,cle_fac18_4$three)
+
+### 2019년
+cle_fac19_4 <- read_excel('cle_fac19_4.xlsx', sheet = 1) 
+cle_fac19_4
+cle_fac19_4$three <- ifelse(cle_fac19_4$three == 1, 'one', ifelse(cle_fac19_4$three == 2, 'two',
+                                                                  ifelse(cle_fac19_4$three == 3, 'thr',NA)))
+ggplot(data = cle_fac19_4, aes(x = num, y = diff, group = three, col = three)) + geom_line() + ylim(-70,50) +
+  scale_x_discrete(limits = cle_fac19_4$num,cle_fac19_4$three)
+# 경제자유도 상위, 하위보다 중위에서 큰 편차를 보임 = 상/하위권에서 주성분이 잘 설명됨. 
+# 그래프에서 0 아래로 그려진 값은 주성분의 평균이 원래 평균보다 크고, 0 위로 그려진 값은 주성분의 평균보다 원래 평균이 더 높다. 
+# = 0 아래로 그려진 값은 주성분의 영향을 더 크게 받고 0 위로 그려진 값은 다른 성분의 영향을 더 크게 받는다.
+
+##### 상관분석 
+### 유의성 검정 함수 -> 상관행렬그래프에 유의성을 표시하기 위함
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- lowCI.mat <- uppCI.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  diag(lowCI.mat) <- diag(uppCI.mat) <- 1
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+      lowCI.mat[i, j] <- lowCI.mat[j, i] <- tmp$conf.int[1]
+      uppCI.mat[i, j] <- uppCI.mat[j, i] <- tmp$conf.int[2]
+    }
+  }
+  return(list(p.mat, lowCI.mat, uppCI.mat))
+}
+
+### 경제자유지수, 경제자유지수를 이루는 12개 변수, 삶의질지수들의 상관분석 (2019년)
+library(corrplot)
+cle19_el <- cle19[,c(10:45)]
+str(cle19_el)
+dim(cle19_el) # 결측치 제거 전 데이터갯수
+dim(na.omit(cle19_el)) # 결측치 제거 후 데이터갯수 : 위와 비교
+library(dplyr)
+cle19_el_kor <- rename(cle19_el, '경제자유지수2019' = 'Score2019',
+                       '재산권보호' = 'PropertyRights',
+                       '사법효과성' = 'JudicalEffectiveness',
+                       '정부청렴도' = 'GovernmentIntegrity',
+                       '조세부담' = 'TaxBurden',
+                       '정부지출' = 'GovtSpending',
+                       '국가재정적자유' = 'FiscalFreedom',
+                       '기업적자유' = 'BusinessFreedom',
+                       '노동의자유' = 'LaborFreedom',
+                       '화폐정책상자유' = 'MonetaryFreedom',
+                       '무역의자유' = 'TradeFreedom',
+                       '투자의자유' = 'InvestmentFreedom',
+                       '금융의자유' = 'FinancialFreedom',
+                       '관세율' = 'TariffRate',
+                       '소득세율' = 'IncomeTaxRate',
+                       '법인세율' = 'CorporateTaxRate',
+                       'GDP대비세금부담율' = 'TaxBurdenofGDP',
+                       'GDP대비정부지출율' = 'GovtExpenditureofGDP',
+                       '인구수' = 'Population',
+                       '구매력평가기준국내총생산' = 'GDP',
+                       'GDP성장률' = 'GDPGrowthRate',
+                       'five년간GDP성장률' = 'fiveYearGDPGrowthRate',
+                       'one인당국민총생산' = 'GDPperCapita',
+                       '실업률' = 'Unemployment',
+                       '물가상승률' = 'Inflation',
+                       '외국인직접투자유입' = 'FDIInflow',
+                       'GDP대비국가부채' = 'PublicDebtofGDP',
+                       '삶의질지수' = 'QualityofLifeIndex',
+                       '구매력' = 'PurchasingPowerIndex',
+                       '건강지수' = 'HealthCareIndex',
+                       '물가지수' = 'CostofLivingIndex',
+                       '소득대비부동산가격비율' = 'PropertyPricetoIncomeRatio',
+                       '통근시간' = 'TrafficCommuteTimeIndex',
+                       '오염' = 'PollutionIndex',
+                       '기후' = 'ClimateIndex',
+                       '범죄지수' = 'CrimeIndex') # 한글컬럼명으로 바꾸기
+cle19_el_cor <- cor(na.omit(cle19_el_kor)) # 
+cle19_el_cor
+
+res1 <- cor.mtest(na.omit(cle19_el), 0.95) # 유의성 검정 함수 세팅
+corrplot(cle19_el_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, number.cex = .5, tl.cex = .5, type = 'upper', tl.col = 'black') # 36개 변수의 상관행렬
+
+corrplot(cle19_el_cor[c(1:13),c(1:13)], method = 'number', sig.level = 0.05, type = 'upper', tl.col = 'black') # 경제자유도지수와 지수를 이루는 12개 변수끼리의 상관행렬
+corrplot(cle19_el_cor[c(14:27),c(14:27)], method = 'number', sig.level = 0.05, type = 'upper', tl.col = 'black') # 경제지표들의 상관행렬
+corrplot(cle19_el_cor[c(28:36),c(28:36)], method = 'number', sig.level = 0.05, type = 'upper', tl.col = 'black') # 삶의질지수와 범죄지수의 상관행렬
+
+### 경제자유지수, 삶의질지수, 범죄지수의 상관분석 
+cle19_elc <- cle19[,c(10,37,45)]
+str(cle19_elc)
+dim(cle19_elc)
+dim(na.omit(cle19_elc))
+cle19_elc_cor <- cor(na.omit(cle19_elc))
+res1 <- cor.mtest(na.omit(cle19_elc), 0.95)
+corrplot(cle19_elc_cor, method='number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', tl.col = 'black') # 세 지수의 상관행렬
+
+### 경제자유지수를 이루는 변수들, 삶의질지수를 이루는 변수들, 범죄지수끼리 상관분석 
+str(cle19)
+cle19_elc_de <- cle19[,c(11:22,38:45)]
+str(cle19_elc_de)
+dim(cle19_elc_de)
+dim(na.omit(cle19_elc_de))
+cle19_elc_de_kor <- rename(cle19_elc_de, '재산권보호' = 'PropertyRights',
+                           '사법효과성' = 'JudicalEffectiveness',
+                           '정부청렴도' = 'GovernmentIntegrity',
+                           '조세부담' = 'TaxBurden',
+                           '정부지출' = 'GovtSpending',
+                           '국가재정적자유' = 'FiscalFreedom',
+                           '기업적자유' = 'BusinessFreedom',
+                           '노동의자유' = 'LaborFreedom',
+                           '화폐정책상자유' = 'MonetaryFreedom',
+                           '무역의자유' = 'TradeFreedom',
+                           '투자의자유' = 'InvestmentFreedom',
+                           '금융의자유' = 'FinancialFreedom',
+                           '구매력' = 'PurchasingPowerIndex',
+                           '건강지수' = 'HealthCareIndex',
+                           '물가지수' = 'CostofLivingIndex',
+                           '소득대비부동산가격비율' = 'PropertyPricetoIncomeRatio',
+                           '통근시간' = 'TrafficCommuteTimeIndex',
+                           '오염' = 'PollutionIndex',
+                           '기후' = 'ClimateIndex',
+                           '범죄지수' = 'CrimeIndex')
+cle19_elc_de_cor <- cor(na.omit(cle19_elc_de_kor))
+cle19_elc_de_cor
+res1 <- cor.mtest(na.omit(cle19_elc_de_cor), 0.95)
+corrplot(cle19_elc_de_cor, method='number', p.mat = res1[[1]], sig.level = 0.05, number.cex = .7, tl.cex = .8, type = 'upper', tl.col = 'black') # 20개 변수들의 상관행렬
+
+#### 경제자유지수와 경제지표, 삶의질지수, 범죄지수들끼리의 상관분석
+cle19_el2 <- cle19[,c(10,23:45)]
+str(cle19_el2)
+cle19_el2_cor <- cor(na.omit(cle19_el2))
+cle19_el2_cor
+res1 <- cor.mtest(na.omit(cle19_el2), 0.95)
+corrplot(cle19_el2_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, number.cex = .6, tl.cex = .6, type = 'upper', tl.col = 'black')
+
+##### 경제자유도지수 구성 변수들과 오염도 세부 상관분석
+eco_pol <- cle19[,c(10:22,43)] # 경제자유지수와 12개 변수 & 오염도만 추출 
+eco_pol <- na.omit(eco_pol) # 결측치 제외
+dim(eco_pol)
+str(eco_pol)
+summary(eco_pol)
+boxplot(eco_pol$PollutionIndex)$stats # 오염도 이상치 확인
+eco_pol_cor <- cor(eco_pol)
+library(corrplot)
+res1 <- cor.mtest(eco_pol_cor, 0.95)
+corrplot(eco_pol_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05,type = 'upper') # 경제자유지수 변수들과 오염도가 음의 상관관계에 있다.
+# Q. 경제자유도가 낮은 나라는 경제자유도가 높은 나라보다 오염도가 더 높을까? 
+# Q. 오염도에 따라 경제자유도의 상관관계 차이가 있을까? 오염도의 음의 상관관계에 차이가 있을까?
+# -> 오염도와 경제자유도를 3그룹으로 나눠 세부적으로 상관분석을 진행
+
+### 1) 오염도를 내림차순으로 정렬해 3그룹으로 나눠 경제자유도와 오염도상위/중위/하위의 상관관계 차이가 있는지 알아보기
+eco_pol_p <- eco_pol %>% arrange(desc(PollutionIndex)) # 오염도가 높은 순서로 정렬
+str(eco_pol_p)
+summary(eco_pol_p)
+dim(eco_pol_p) # 데이터 갯수가 102개이므로 1그룹당 34개 나라씩
+idx <- 1:34
+idx2 <- 35:68
+idx3 <- 69:102
+eco_pol_p_h <- eco_pol_p[1:34,] # 오염도상위 ( = 더러움)
+eco_pol_p_m <- eco_pol_p[35:68,] # 오염도중위 (보통)
+eco_pol_p_l <- eco_pol_p[69:102,] # 오염도하위 ( = 깨끗함)
+summary(eco_pol_p_h) 
+summary(eco_pol_p_m)
+summary(eco_pol_p_l) # 오염도가 맞게 들어왔는지 확인
+# 오염도 상위 국가 상관분석
+eco_pol_p_h_cor <- cor(eco_pol_p_h)
+res1 <- cor.mtest(eco_pol_p_h_cor, 0.95)
+corrplot(eco_pol_p_h_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black')
+# 오염도 중위 국가 상관분석
+eco_pol_p_m_cor <- cor(eco_pol_p_m)
+res1 <- cor.mtest(eco_pol_p_m_cor, 0.95)
+corrplot(eco_pol_p_m_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black')
+# 오염도 하위 국가 상관분석
+eco_pol_p_l_cor <- cor(eco_pol_p_l)
+res1 <- cor.mtest(eco_pol_p_l_cor, 0.95)
+corrplot(eco_pol_p_l_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black')
+
+# 한꺼번에 보기 
+par(mfrow = c(1,3))
+corrplot(eco_pol_h_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black', main = '\n\n\n 오염도 상위')
+corrplot(eco_pol_m_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black', main = '\n\n\n 오염도 중위')
+corrplot(eco_pol_l_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black', main = '\n\n\n 오염도 하위')
+# 결론 : 오염도가 높은 나라와 중간 나라는 경제자유도지수 구성 변수들과 상관관계가 없으나
+#        오염도가 낮은 나라에서 경제자유도지수 구성 변수들과 오염도의 강한 음의 상관관계를 볼 수 있음
+
+### 2) Score를 내림차순으로 정렬해 3그룹으로 나눠 경제자유도상위/중위/하위와 오염도의 상관관계 차이가 있는지 알아보기
+eco_pol_e <- eco_pol %>% arrange(desc(Score2019))
+str(eco_pol_e)
+summary(eco_pol_e)
+dim(eco_pol_e) # 마찬가지로 1그룹당 34개 나라씩
+eco_pol_e_h <- eco_pol_e[idx,] # 경제자유도상위 ( = 자유로움)
+eco_pol_e_m <- eco_pol_e[idx2,] # 경제자유도중위 (보통)
+eco_pol_e_l <- eco_pol_e[idx3,] # 경제자유도하위 ( = 경제 억압)
+summary(eco_pol_e_h)
+summary(eco_pol_e_m)
+summary(eco_pol_e_l) # 오염도가 맞게 들어왔는지 확인
+# 경제자유도 상위 국가 상관분석
+eco_pol_e_h_cor <- cor(eco_pol_e_h)
+res1 <- cor.mtest(eco_pol_e_h_cor, 0.95)
+corrplot(eco_pol_e_h_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black')
+# 경제자유도 중위 국가 상관분석
+eco_pol_e_m_cor <- cor(eco_pol_e_m)
+res1 <- cor.mtest(eco_pol_e_m_cor, 0.95)
+corrplot(eco_pol_e_m_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black')
+# 경제자유도 하위 국가 상관분석
+eco_pol_e_l_cor <- cor(eco_pol_e_l)
+res1 <- cor.mtest(eco_pol_e_l_cor, 0.95)
+corrplot(eco_pol_e_l_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black')
+
+# 한꺼번에 보기 
+par(mfrow = c(1,3))
+corrplot(eco_pol_e_h_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black', main = '\n\n\n 경제자유도 상위')
+corrplot(eco_pol_e_m_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black', main = '\n\n\n 경제자유도 중위')
+corrplot(eco_pol_e_l_cor, method = 'number', p.mat = res1[[1]], sig.level = 0.05, type = 'upper', number.cex = .7, tl.cex = .8, tl.col = 'black', main = '\n\n\n 경제자유도 하위')
+# 결론 : 
+# 1) 경제자유도 상위, 중위에서 오염도와 재산권보호/사법효과성/정부청렴도 항목에서 강한 상관관계
+# 2) 경제자유도 중위에서 재산권보호와 정부지출의 강한 음의 상관관계
+# 3) 경제자유도 하위에서 정부지출과 무역자유도의 강한 음의 상관관계
+# 4) 경제자유도 상위, 하위에서는 경제자유도지수와 지수를 이루는 12개의 변수에서 어느정도의 양의 상관관계를 볼 수 있으나 경제자유도 중위에서는 크게 유의한 상관관계를 볼 수 없음
+
+##### 경제자유도지수의 평균 년도별 선그래프 
+library(plyr)
+cle_avg <- join(cle13[,c(1,10)], cle14[,c(1,10)], by = 'CountryID')
+cle_avg
+cle_avg <- join(cle_avg, cle15[,c(1,10)], by = 'CountryID')
+cle_avg <- join(cle_avg, cle16[,c(1,10)], by = 'CountryID')
+cle_avg <- join(cle_avg, cle17[,c(1,10)], by = 'CountryID')
+cle_avg <- join(cle_avg, cle18[,c(1,10)], by = 'CountryID')
+cle_avg <- join(cle_avg, cle19[,c(1,10)], by = 'CountryID') # CountryID와 스코어2013~2019년까지의 데이터 합치기
+summary(cle_avg)
+dim(cle_avg)
+cle_avg2 <- apply(na.omit(cle_avg),2,mean) # 년도별 평균
+cle_avg2
+class(cle_avg2)
+cle_avg2 <- as.data.frame(cle_avg2)
+str(cle_avg2)
+cle_avg2
+cle_avg2$year <- c(1,2013,2014,2015,2016,2017,2018,2019)
+library(ggplot2)
+library(ggrepel)
+ggplot(cle_avg2[c(2:8),], aes(x = year, y = cle_avg2)) + geom_line(size = .8, col = '#92beaf') + 
+  geom_point(col = '#92beaf', size = 3) + xlim(2013,2019) + ylim(58,63) + 
+  xlab('년도') + ylab('경제자유도 평균') + ggtitle('년도별 경제자유도지수 전세계 평균 추세') +
+  scale_x_continuous(breaks = c(2013,2014,2015,2016,2017,2018,2019)) + 
+  geom_text_repel(aes(label = round(cle_avg2,1)), vjust = -1, col = '#92beaf')
+
+##### GDP와 경제자유도지수의 산점도
+### GDP와 Score2019 산점도
+cle19_gdp <- cle19[c(5,10,29)]
+cle19_gdp
+cle19_gdp <- na.omit(cle19_gdp)
+summary(cle19_gdp)
+cle19_gdp$Region2 <- as.factor(cle19_gdp$Region2)
+ggplot(cle19_gdp, aes(x = GDP, y = Score2019)) + geom_point(aes(colour = Region2)) + theme(legend.position = 'top')
+# 이상치 때문에 그래프가 잘 안보이는 문제 발생 -> GDP에 로그 씌우기 
+
+### log(GDP)와 Score2019 산점도
+cle19_gdp$GDPlog <- log(cle19_gdp$GDP)
+cle19_gdp
+ggplot(cle19_gdp, aes(x = GDPlog, y = Score2019)) + geom_point(aes(colour = Region2)) + theme(legend.position = 'top')
+# 한눈에 본다고 뭔가가 보이지 않음.. -> 대륙별로 나눠서 보기
+
+### 대륙별 경제자유도지수의 평균 년도별 선그래프 
+library(sqldf) ; library(dplyr)
+avg19 <- cle19 %>% filter(!is.na(Score2019)) %>% group_by(Region2) %>% summarise(meansc = mean(Score2019)) %>% mutate(year = 2019) %>% select (Region2, year, meansc) 
+avg18 <- cle18 %>% filter(!is.na(Score2018)) %>% group_by(Region2) %>% summarise(meansc = mean(Score2018)) %>% mutate(year = 2018) %>% select (Region2, year, meansc)
+avg17 <- cle17 %>% filter(!is.na(Score2017)) %>% group_by(Region2) %>% summarise(meansc = mean(Score2017)) %>% mutate(year = 2017) %>% select (Region2, year, meansc)
+avg16 <- cle16 %>% filter(!is.na(Score2016)) %>% group_by(Region2) %>% summarise(meansc = mean(Score2016)) %>% mutate(year = 2016) %>% select (Region2, year, meansc)
+avg15 <- cle15 %>% filter(!is.na(Score2015)) %>% group_by(Region2) %>% summarise(meansc = mean(Score2015)) %>% mutate(year = 2015) %>% select (Region2, year, meansc)
+avg14 <- cle14 %>% filter(!is.na(Score2014)) %>% group_by(Region2) %>% summarise(meansc = mean(Score2014)) %>% mutate(year = 2014) %>% select (Region2, year, meansc)
+avg13 <- cle13 %>% filter(!is.na(Score2013)) %>% group_by(Region2) %>% summarise(meansc = mean(Score2013)) %>% mutate(year = 2013) %>% select (Region2, year, meansc) # 년도별 대륙별 스코어 평균
+avg_score <- rbind(avg19, avg18, avg17, avg16, avg15, avg14, avg13) # 대륙별 전년도 스코어 평균 데이터프레임 생성
+avg_score
+str(avg_score)
+library(ggplot2) ; library(ggrepel)
+ggplot(avg_score, aes(x = year, y = meansc, col = Region2)) + geom_line() + geom_point(size = 3) + 
+  xlim(c(2013,2019)) + ylim(c(50,70)) + geom_text_repel(aes(label = round(meansc,1))) +
+  scale_x_continuous(breaks = c(2013,2014,2015,2016,2017,2018,2019))
+
+### GDP와 경제자유도지수의 대륙별 전체년도 산점도
+library(sqldf)
+scatter7year_lm <- function(x_axis, y_axis, Region2, geocol, xlim=NULL, ylim=NULL) {
+  par(mfrow=c(2,4))
+  year_list <- c("cle13", "cle14", "cle15", "cle16", "cle17", "cle18", "cle19")
+  if(is.null(ylim)){
+    if(is.null(ylim) & y_axis %in% c(25,28:32,34:38,40)){
+      ylim=NULL
+    }else{
+      ylim<-c(0,100)
+    }
+  }
+  if(is.null(xlim)){
+    if(is.null(xlim) & x_axis %in% c(25,28:32,34:38,40)){ 
+      xlim=NULL
+    }else{
+      xlim<-c(0,100)
+    }
+  }
+  while(1){
+    i<-2013
+    for(year_cnt in year_list){
+      switch(year_cnt, cle13=year_title<-2013, cle14=year_title<-2014, cle15=year_title<-2015, cle16=year_title<-2016, cle17=year_title<-2017, cle18=year_title<-2018, cle19=year_title<-2019)
+      if(x_axis==10 & y_axis==10){
+        select_query<-sqldf(paste('select', '"',list1_46[x_axis],year_title,'"' , ',' ,  '"',list1_46[y_axis],year_title,'"' , 'from ', year_cnt , ' where Region2 = ', '"', Region2, '"', sep=""))
+      }else if(x_axis==10){
+        select_query<-sqldf(paste('select', '"',list1_46[x_axis],year_title,'"' , ',' ,  '"',list1_46[y_axis],'"' , 'from ', year_cnt , ' where Region2 = ', '"', Region2, '"', sep=""))
+      }else if(y_axis==10){
+        select_query<-sqldf(paste('select', '"',list1_46[x_axis],'"' , ',' ,  '"',list1_46[y_axis],year_title,'"' , 'from ', year_cnt , ' where Region2 = ', '"', Region2, '"', sep=""))
+      }else{
+        select_query<-sqldf(paste('select', '"',list1_46[x_axis],'"' , ',' ,  '"',list1_46[y_axis],'"' , 'from ', year_cnt , ' where Region2 = ', '"', Region2, '"', sep=""))
+      }
+      select_query <- na.omit(select_query)
+      if(y_axis %in% c(25,28:32,34:38,40) | x_axis %in% c(25,28:32,34:38,40)){ 
+        plot(select_query[,1],select_query[,2], xlab=names(select_query[1]), ylab=names(select_query[2]), main=year_title, xlim=xlim, ylim=ylim, cex = 1.5, pch = 20, col = geocol)
+      }else if(x_axis %in% c(25,28:32,34:38,40)){ # 
+        plot(select_query[,1],select_query[,2], xlab=names(select_query[1]), ylab=names(select_query[2]), main=year_title, xlim=xlim, ylim=ylim, cex = 1.5, pch = 20, col = geocol)
+      }else if(y_axis %in% c(25,28:32,34:38,40)){
+        plot(select_query[,1],select_query[,2], xlab=names(select_query[1]), ylab=names(select_query[2]), main=year_title, xlim=xlim, ylim=ylim, cex = 1.5, pch = 20, col = geocol)
+      }else{
+        plot(select_query[,1],select_query[,2], xlab=names(select_query[1]), ylab=names(select_query[2]), main=year_title, xlim=xlim, ylim=ylim, cex = 1.5, pch = 20, col = geocol)
+      }
+      m0 <- lm(select_query[,2] ~ select_query[,1], data = select_query)
+      i<-i+1
+    }
+    break
+  }
+}
+
+scatter7year_lm(29,10,"Asia-Pacific","#fb6a31",xlim=c(0,24000), ylim=c(0,100)) # 아시아 7년치 GDP-Score 산점도
+scatter7year_lm(29,10,"Europe","#92beaf",xlim=c(0,5000), ylim=c(0,100)) # 유럽 7년치 GDP-Score 산점도
+scatter7year_lm(29,10,"Middle East and North Africa","#424242",xlim=c(0,2000), ylim=c(0,100)) # 중동&북아프리카 7년치 GDP-Score 산점도
+scatter7year_lm(29,10,"North Americas","#ffcc56",xlim=c(0,21000), ylim=c(0,100)) # 북미 7년치 GDP-Score 산점도
+scatter7year_lm(29,10,"South Americas","navy",xlim=c(0,4000), ylim=c(0,100)) # 남미 7년치 GDP-Score 산점도
+scatter7year_lm(29,10,"Sub-Saharan Africa","#886b68",xlim=c(0,1200), ylim=c(0,100)) # 아프리카 7년치 GDP-Score 산점도
+
+##### 대륙별 경제자유도 인덱스 비율 (1 : 완전 자유로움 ~ 5 : 억압)
+### 대륙별 전년도 경제자유도 인덱스 갯수에 대한 자료만들기 : cleindex
+library(dplyr)
+# 2019년
+cle19$index <- ifelse(cle19$Score2019 >= 80, 1, ifelse(cle19$Score2019>=70, 2, ifelse(cle19$Score2019>= 60, 3, ifelse(cle19$Score2019>= 50,4,5))))
+cle19index <- cle19 %>% filter(!is.na(Score2019)) %>% select(Region2, Score2019, index) %>% group_by(Region2, index) %>% 
+  summarise(n2019 = n()) %>% mutate(tot = sum(n2019)) %>% mutate(pct = round(n2019/tot*100,2)) # n()함수 실행 시 다른 패키지와 함수충돌로 에러가 날 수 있으니 안되면 껐다 다시 켜서 실행해보세용
+cle19index
+# 2018년
+cle18$index <- ifelse(cle18$Score2018 >= 80, 1, ifelse(cle18$Score2018>=70, 2, ifelse(cle18$Score2018>= 60, 3, ifelse(cle18$Score2018>= 50,4,5))))
+cle18index <- cle18 %>% filter(!is.na(Score2018)) %>% select(Region2, Score2018, index) %>% group_by(Region2, index) %>% 
+  summarise(n2018 = n()) %>% mutate(tot = sum(n2018)) %>% mutate(pct = round(n2018/tot*100,2))
+cle18index
+# 2017년
+cle17$index <- ifelse(cle17$Score2017 >= 80, 1, ifelse(cle17$Score2017>=70, 2, ifelse(cle17$Score2017>= 60, 3, ifelse(cle17$Score2017>= 50,4,5))))
+cle17index <- cle17 %>% filter(!is.na(Score2017)) %>% select(Region2, Score2017, index) %>% group_by(Region2, index) %>% 
+  summarise(n2017 = n()) %>% mutate(tot = sum(n2017)) %>% mutate(pct = round(n2017/tot*100,2))
+cle17index
+# 2016년
+cle16$index <- ifelse(cle16$Score2016 >= 80, 1, ifelse(cle16$Score2016>=70, 2, ifelse(cle16$Score2016>= 60, 3, ifelse(cle16$Score2016>= 50,4,5))))
+cle16index <- cle16 %>% filter(!is.na(Score2016)) %>% select(Region2, Score2016, index) %>% group_by(Region2, index) %>% 
+  summarise(n2016 = n()) %>% mutate(tot = sum(n2016)) %>% mutate(pct = round(n2016/tot*100,2))
+cle16index
+# 2015년
+cle15$index <- ifelse(cle15$Score2015 >= 80, 1, ifelse(cle15$Score2015>=70, 2, ifelse(cle15$Score2015>= 60, 3, ifelse(cle15$Score2015>= 50,4,5))))
+cle15index <- cle15 %>% filter(!is.na(Score2015)) %>% select(Region2, Score2015, index) %>% group_by(Region2, index) %>% 
+  summarise(n2015 = n()) %>% mutate(tot = sum(n2015)) %>% mutate(pct = round(n2015/tot*100,2))
+cle15index
+# 2014년
+cle14$index <- ifelse(cle14$Score2014 >= 80, 1, ifelse(cle14$Score2014>=70, 2, ifelse(cle14$Score2014>= 60, 3, ifelse(cle14$Score2014>= 50,4,5))))
+cle14index <- cle14 %>% filter(!is.na(Score2014)) %>% select(Region2, Score2014, index) %>% group_by(Region2, index) %>% 
+  summarise(n2014 = n()) %>% mutate(tot = sum(n2014)) %>% mutate(pct = round(n2014/tot*100,2))
+cle14index
+cle14index <- as.data.frame(cle14index)
+# 2013년
+cle13$index <- ifelse(cle13$Score2013 >= 80, 1, ifelse(cle13$Score2013>=70, 2, ifelse(cle13$Score2013>= 60, 3, ifelse(cle13$Score2013>= 50,4,5))))
+cle13index <- cle13 %>% filter(!is.na(Score2013)) %>% select(Region2, Score2013, index) %>% group_by(Region2, index) %>% 
+  summarise(n2013 = n()) %>% mutate(tot = sum(n2013)) %>% mutate(pct = round(n2013/tot*100,2))
+cle13index
+class(cle13index) # 조인을 위해 데이터프레임으로 바꿔주기
+cle13index <- as.data.frame(cle13index)
+cle14index <- as.data.frame(cle14index)
+cle15index <- as.data.frame(cle15index)
+cle16index <- as.data.frame(cle16index)
+cle17index <- as.data.frame(cle17index)
+cle18index <- as.data.frame(cle18index)
+cle19index <- as.data.frame(cle19index)
+library(plyr)
+cleindex <- join(cle13index[,c(1,2,3)], cle14index[,c(1,2,3)], by = c('Region2','index'), type = 'full')
+cleindex
+cleindex <- join(cleindex, cle15index[,c(1,2,3)], by = c('Region2','index'), type = 'full')
+cleindex <- join(cleindex, cle16index[,c(1,2,3)], by = c('Region2','index'), type = 'full')
+cleindex <- join(cleindex, cle17index[,c(1,2,3)], by = c('Region2','index'), type = 'full')
+cleindex <- join(cleindex, cle18index[,c(1,2,3)], by = c('Region2','index'), type = 'full')
+cleindex <- join(cleindex, cle19index[,c(1,2,3)], by = c('Region2','index'), type = 'full')
+cleindex <- cleindex %>% arrange(Region2, index)
+class(cleindex)
+dim(cleindex)
+
+### 전년도 대륙별 인덱스 비율 그래프
+library(ggplot2)
+ggplot(cle19index, aes(x = Region2, y = pct, fill = index)) +
+  geom_col() + 
+  coord_flip() + scale_x_discrete() + xlab('인덱스 비율') + ylab('대륙') + ggtitle('2019년 경제자유도 인덱스 비율')
+
+ggplot(cle18index, aes(x = Region2, y = pct, fill = index)) +
+  geom_col() + 
+  coord_flip() + scale_x_discrete() + xlab('인덱스 비율') + ylab('대륙') + ggtitle('2018년 경제자유도 인덱스 비율')
+
+ggplot(cle17index, aes(x = Region2, y = pct, fill = index)) +
+  geom_col() + 
+  coord_flip() + scale_x_discrete() + xlab('인덱스 비율') + ylab('대륙') + ggtitle('2017년 경제자유도 인덱스 비율')
+
+ggplot(cle16index, aes(x = Region2, y = pct, fill = index)) +
+  geom_col() + 
+  coord_flip() + scale_x_discrete() + xlab('인덱스 비율') + ylab('대륙') + ggtitle('2016년 경제자유도 인덱스 비율')
+
+ggplot(cle15index, aes(x = Region2, y = pct, fill = index)) +
+  geom_col() + 
+  coord_flip() + scale_x_discrete() + xlab('인덱스 비율') + ylab('대륙') + ggtitle('2015년 경제자유도 인덱스 비율')
+
+ggplot(cle14index, aes(x = Region2, y = pct, fill = index)) +
+  geom_col() + 
+  coord_flip() + scale_x_discrete() + xlab('인덱스 비율') + ylab('대륙') + ggtitle('2014년 경제자유도 인덱스 비율')
+
+ggplot(cle13index, aes(x = Region2, y = pct, fill = index)) +
+  geom_col() + 
+  coord_flip() + scale_x_discrete() + xlab('인덱스 비율') + ylab('대륙') + ggtitle('2013년 경제자유도 인덱스 비율')
+
+### 재산권보호와 정부청렴도 
+scatter_Limit_move_lm(2019, 11, 13, 30, y = F, Asc =T) # 재산권 보호와 정부청렴도의 산점도 - 재산권보호의 오름차순
+scatter_Limit_move_lm(2019, 11, 13, 30, y = F, Asc =F) # 재산권 보호와 정부청렴도의 산점도 - 재산권보호의 내림차순
+scatter_Score_Limit_lm(2019, 11, 13, 186, mfrow=T, summary=F, Asc=F) # 2019년 재산권 보호와 정부청렴도의 산점도 
+
+### 재산권보호와 경제자유지수의 년도별 산점도 
+scatter7year_Limit_move_lm(11, 10, 10, y = F, Asc=T, xlim = c(0,100), ylim = c(0,100))
+scatter7year_Limit_lm(11, 10, 186, y = F, Asc=T, xlim = c(0,100), ylim = c(0,100))
+
+### 2018년 GDP성장률와 재산권보호, 법인세율, 물가지수, 사법효과성, 정부지출, GDP의 산점도 
+scatter_select_lm(2018, c(11,25,40,12,15,32), 30, limit= 30, move = T) 
+scatter_select_lm(2018, c(11,25,40,12,15,32), 30, limit= 180, move = F)
