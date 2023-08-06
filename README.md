@@ -26,4 +26,4 @@ R
 </br>
 
 ## 자료
-[발표자료_경제자유지수를이용한데이터분석과시각화.pdf](https://github.com/saeromheo/data-visualization-about-index-of-economic-freedom/blob/2bb7c8cf59640dfb26c25e9272dbcf0ac74b7efe/%EB%B0%9C%ED%91%9C%EC%9E%90%EB%A3%8C_%EA%B2%BD%EC%A0%9C%EC%9E%90%EC%9C%A0%EC%A7%80%EC%88%98%EB%A5%BC%EC%9D%B4%EC%9A%A9%ED%95%9C%EB%8D%B0%EC%9D%B4%ED%84%B0%EB%B6%84%EC%84%9D%EA%B3%BC%EC%8B%9C%EA%B0%81%ED%99%94.pdf)
+[발표자료_경제자유지수를이용한데이터분석과시각화.pdf](발표자료_경제자유지수를이용한데이터분석과시각화.pdf)
